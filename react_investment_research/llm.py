@@ -88,6 +88,46 @@ class LLMClient:
 
         return {"tools": [], "llm_error": "Unknown LLM provider"}
 
+    def _generate_tool_decision_example(self, tools_description: str, example_tickers: list[str]) -> str:
+        """Generate a dynamic example JSON for tool decisions based on available tools.
+        
+        Parses tool names from tools_description and creates JSON example using
+        actual ticker symbols rather than hardcoded examples.
+        
+        Args:
+            tools_description: Formatted description of available tools (from registry)
+            example_tickers: List of actual tickers to use in example (first 1-3)
+            
+        Returns:
+            JSON string with tool decision example
+        """
+        # Extract tool names from description (format: "- tool_name: description")
+        tool_names = []
+        for line in tools_description.split('\n'):
+            if line.strip().startswith('-'):
+                # Extract tool name between '-' and ':'
+                parts = line.split(':')
+                if len(parts) >= 2:
+                    tool_name = parts[0].strip().lstrip('-').strip()
+                    tool_names.append(tool_name)
+        
+        # Build example with actual tools and tickers
+        if tool_names:
+            example_tools = [
+                {"tool": tool_names[0], "tickers": example_tickers}
+            ]
+            # Add second tool if available and we have at least 2 different tools
+            if len(tool_names) > 1:
+                example_tools.append({
+                    "tool": tool_names[1],
+                    "tickers": example_tickers if len(example_tickers) > 1 else example_tickers
+                })
+        else:
+            # Fallback if no tools found in description
+            example_tools = []
+        
+        return json.dumps({"tools": example_tools}, indent=2)
+
     def _openai_summary(
         self,
         query: str,
@@ -276,6 +316,10 @@ Example:
         try:
             client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
+            # Generate dynamic example based on available tickers (limit to 3 for brevity)
+            example_tickers = tickers[:3] if len(tickers) > 0 else ["EXAMPLE"]
+            example_json = self._generate_tool_decision_example(tools_description, example_tickers)
+
             prompt = f"""You are an investment research agent. Given a user query and available tools, decide which tools to invoke.
 
 User Query: {query}
@@ -285,10 +329,7 @@ Available Tools:
 {tools_description}
 
 For each relevant tool, specify which tickers it should be called for. Return ONLY a JSON object:
-{{"tools": [
-  {{"tool": "market_snapshot", "tickers": ["NVDA", "AAPL"]}},
-  {{"tool": "fundamentals_events", "tickers": ["NVDA", "AAPL"]}}
-]}}
+{example_json}
 
 Rules:
 - Include only relevant tools for the query
@@ -331,6 +372,10 @@ Rules:
         try:
             client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
+            # Generate dynamic example based on available tickers (limit to 3 for brevity)
+            example_tickers = tickers[:3] if len(tickers) > 0 else ["EXAMPLE"]
+            example_json = self._generate_tool_decision_example(tools_description, example_tickers)
+
             prompt = f"""You are an investment research agent. Given a user query and available tools, decide which tools to invoke.
 
 User Query: {query}
@@ -340,10 +385,7 @@ Available Tools:
 {tools_description}
 
 For each relevant tool, specify which tickers it should be called for. Return ONLY a JSON object:
-{{"tools": [
-  {{"tool": "market_snapshot", "tickers": ["NVDA", "AAPL"]}},
-  {{"tool": "fundamentals_events", "tickers": ["NVDA", "AAPL"]}}
-]}}
+{example_json}
 
 Rules:
 - Include only relevant tools for the query

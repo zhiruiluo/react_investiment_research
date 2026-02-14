@@ -39,6 +39,56 @@ class TestLLMDecideTools:
         assert hasattr(llm, "decide_tools")
         assert callable(llm.decide_tools)
 
+    def test_generate_tool_decision_example_single_tool(self):
+        """Test dynamic example generation with single tool."""
+        llm = LLMClient()
+        tools_desc = "- market_snapshot: Fetch technical analysis"
+        example = llm._generate_tool_decision_example(tools_desc, ["NVDA"])
+        
+        result = json.loads(example)
+        assert "tools" in result
+        assert len(result["tools"]) == 1
+        assert result["tools"][0]["tool"] == "market_snapshot"
+        assert result["tools"][0]["tickers"] == ["NVDA"]
+
+    def test_generate_tool_decision_example_multiple_tools(self):
+        """Test dynamic example generation with multiple tools."""
+        llm = LLMClient()
+        tools_desc = """- market_snapshot: Fetch technical analysis
+  Example: What's the trend?
+- fundamentals_events: Fetch fundamentals
+  Example: What's the P/E?"""
+        example = llm._generate_tool_decision_example(tools_desc, ["NVDA", "AAPL"])
+        
+        result = json.loads(example)
+        assert "tools" in result
+        assert len(result["tools"]) == 2
+        assert result["tools"][0]["tool"] == "market_snapshot"
+        assert result["tools"][1]["tool"] == "fundamentals_events"
+        assert result["tools"][0]["tickers"] == ["NVDA", "AAPL"]
+        assert result["tools"][1]["tickers"] == ["NVDA", "AAPL"]
+
+    def test_generate_tool_decision_example_empty_tickers(self):
+        """Test dynamic example generation with empty ticker list."""
+        llm = LLMClient()
+        tools_desc = "- market_snapshot: Fetch technical analysis"
+        example = llm._generate_tool_decision_example(tools_desc, [])
+        
+        result = json.loads(example)
+        assert "tools" in result
+        assert len(result["tools"]) == 1
+        assert result["tools"][0]["tickers"] == []
+
+    def test_generate_tool_decision_example_no_tools(self):
+        """Test dynamic example generation when no tools found."""
+        llm = LLMClient()
+        tools_desc = "Invalid format with no tools"
+        example = llm._generate_tool_decision_example(tools_desc, ["NVDA"])
+        
+        result = json.loads(example)
+        assert "tools" in result
+        assert result["tools"] == []
+
 
 class TestToolRegistry:
     """Tests for tool registry integration with agent."""

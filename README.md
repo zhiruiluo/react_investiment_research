@@ -13,6 +13,7 @@ A minimal, offline-capable AI agent for structured investment research with two 
   - Allowed periods: 1mo, 3mo, 6mo, 1y
   - Prompt injection hardening via strict JSON validation
   - Mandatory disclaimer: "Research summary, not financial advice."
+  - Optional LLM ticker inference when `--tickers` is omitted
 - **Offline Testing**
   - All tests run without network access
   - Mocked tool outputs in JSON fixtures
@@ -51,7 +52,7 @@ python -m pip install -r requirements.txt
 python -m pytest -q
 ```
 
-Expected output: `35 passed` (16 unit tests + 19 integration tests with real LLM)
+Expected output: `58 passed` (includes unit and integration tests)
 
 ### Run Offline Simulation
 
@@ -75,6 +76,10 @@ python -m react_investment_research --query "compare SPY vs QQQ" --tickers SPY,Q
 OPENAI_API_KEY=sk-... python -m react_investment_research --use-llm \
   --query "compare AAPL vs MSFT performance" --tickers AAPL,MSFT --period 3mo
 
+# With LLM ticker inference (omit --tickers)
+OPENAI_API_KEY=sk-... python -m react_investment_research --use-llm \
+  --query "compare Nvidia vs AMD over 6 months" --period 6mo
+
 # Option 2: Anthropic Claude (fallback)
 ANTHROPIC_API_KEY=sk-ant-... python -m react_investment_research --use-llm \
   --query "compare AAPL vs MSFT performance" --tickers AAPL,MSFT --period 3mo
@@ -92,6 +97,8 @@ All final outputs conform to this JSON schema:
     "thesis_bullets": ["AAPL: bullish trend, return 8.33% over 3mo"],
     "risks": ["AAPL: high volatility (22.5%)"]
   },
+  "tickers_source": "explicit",
+  "tickers_inferred": [],
   "fundamentals": {
     "AAPL": {
       "marketCap": 2800000000000,

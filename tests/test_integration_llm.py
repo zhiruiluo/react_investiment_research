@@ -165,16 +165,17 @@ class TestAgentWithLLM:
         assert any("period" in str(l).lower() for l in result["limitations"])
 
     def test_agent_guardrail_proxy_tickers(self, has_openai_key):
-        """Test guardrail: no tickers uses proxy tickers."""
+        """Test guardrail: no tickers uses LLM inference when enabled."""
         if not has_openai_key:
             pytest.skip("OPENAI_API_KEY not set")
 
         agent = ResearchAgent(offline=False, use_llm=True)
-        result = agent.run(query="macro overview", tickers=[], period="3mo")
+        result = agent.run(query="compare NVDA vs AMD", tickers=[], period="3mo")
 
-        # Should use proxy tickers
-        assert result["tickers"] == ["SPY", "QQQ", "TLT", "GLD"]
-        assert any("proxy" in str(l).lower() for l in result["limitations"])
+        assert result["tickers_source"] == "llm"
+        assert result["tickers_inferred"]
+        assert len(result["tickers"]) <= 5
+        assert all(t.isupper() for t in result["tickers"])
 
     def test_agent_disclaimer_always_included(self, has_openai_key):
         """Test guardrail: disclaimer is always present."""

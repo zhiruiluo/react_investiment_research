@@ -117,6 +117,8 @@ FINAL_OUTPUT_SCHEMA: Dict[str, Any] = {
         "query",
         "tickers",
         "summary",
+        "tickers_source",
+        "tickers_inferred",
         "fundamentals",
         "tool_returns",
         "data_used",
@@ -136,6 +138,8 @@ FINAL_OUTPUT_SCHEMA: Dict[str, Any] = {
                 "risks": {"type": "array", "items": {"type": "string"}},
             },
         },
+        "tickers_source": {"type": "string"},
+        "tickers_inferred": {"type": "array", "items": {"type": "string"}},
         "fundamentals": {
             "type": "object",
             "additionalProperties": True,

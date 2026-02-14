@@ -14,6 +14,11 @@ The project exposes a single CLI that returns JSON to stdout.
 - `--use-llm` (optional): Enable LLM-based analysis (requires OPENAI_API_KEY or ANTHROPIC_API_KEY).
 - `--report-cost` (optional): Include cost and token analysis in output (requires `--use-llm`).
 
+Ticker inference:
+- If `--tickers` is omitted and `--use-llm` is enabled, the agent asks the LLM to infer tickers from the query.
+- Inferred tickers are validated; invalid symbols are dropped with a limitation note.
+- If none are valid, the agent falls back to proxy tickers.
+
 ### Example
 `python -m react_investment_research --query "compare AAPL vs MSFT" --tickers AAPL,MSFT --period 3mo`
 
@@ -86,3 +91,5 @@ Outputs (JSON):
 
 Final output additions:
 `tool_returns` contains raw tool payloads keyed by ticker (market_snapshot and fundamentals_events).
+`tickers_source` reports how tickers were chosen: `explicit`, `llm`, or `proxy`.
+`tickers_inferred` includes raw LLM-inferred tickers (empty when explicit/proxy).

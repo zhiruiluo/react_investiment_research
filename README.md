@@ -277,6 +277,10 @@ docs/
 ├── API_SPEC.md          # Tool contracts
 ├── CONVENTIONS.md       # Code style and error handling
 ├── ENV.md               # Setup and run instructions
+
+## License
+
+MIT. See [LICENSE](LICENSE).
 ├── TEST_PLAN.md         # Test strategy
 └── TASKS.md             # Build plan
 ```

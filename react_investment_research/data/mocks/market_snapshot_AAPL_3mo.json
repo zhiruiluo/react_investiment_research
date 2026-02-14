@@ -1,0 +1,28 @@
+{
+  "ticker": "AAPL",
+  "asof": "2026-01-31",
+  "period": "3mo",
+  "interval": "1d",
+  "prices": {
+    "start": 180.0,
+    "end": 195.0,
+    "return_pct": 8.33,
+    "max_drawdown_pct": -6.5
+  },
+  "risk": {
+    "volatility_ann_pct": 22.5,
+    "atr_14": 3.1
+  },
+  "trend": {
+    "sma_20": 191.2,
+    "sma_50": 187.9,
+    "trend_label": "bullish"
+  },
+  "volume": {
+    "avg_20d": 56000000,
+    "latest": 62000000,
+    "zscore_latest": 1.2
+  },
+  "relative": [],
+  "notes": []
+}

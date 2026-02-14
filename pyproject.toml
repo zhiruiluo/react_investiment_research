@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "react-investment-research"
+version = "0.1.0"
+description = "ReAct investment research agent with tool guardrails"
+requires-python = ">=3.11"
+dependencies = [
+    "yfinance",
+    "pandas",
+    "numpy",
+    "jsonschema",
+    "anthropic",
+    "openai",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov"]

@@ -1,0 +1,8 @@
+yfinance
+pandas
+numpy
+jsonschema
+pytest
+anthropic
+openai
+python-dotenv

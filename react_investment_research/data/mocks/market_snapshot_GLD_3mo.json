@@ -1,0 +1,28 @@
+{
+  "ticker": "GLD",
+  "asof": "2026-01-31",
+  "period": "3mo",
+  "interval": "1d",
+  "prices": {
+    "start": 190.0,
+    "end": 196.0,
+    "return_pct": 3.16,
+    "max_drawdown_pct": -2.0
+  },
+  "risk": {
+    "volatility_ann_pct": 12.4,
+    "atr_14": 1.9
+  },
+  "trend": {
+    "sma_20": 195.1,
+    "sma_50": 193.4,
+    "trend_label": "bullish"
+  },
+  "volume": {
+    "avg_20d": 12000000,
+    "latest": 11800000,
+    "zscore_latest": -0.1
+  },
+  "relative": [],
+  "notes": []
+}

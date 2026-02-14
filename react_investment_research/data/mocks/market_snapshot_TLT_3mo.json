@@ -1,0 +1,28 @@
+{
+  "ticker": "TLT",
+  "asof": "2026-01-31",
+  "period": "3mo",
+  "interval": "1d",
+  "prices": {
+    "start": 92.0,
+    "end": 90.0,
+    "return_pct": -2.17,
+    "max_drawdown_pct": -5.5
+  },
+  "risk": {
+    "volatility_ann_pct": 16.8,
+    "atr_14": 1.4
+  },
+  "trend": {
+    "sma_20": 90.8,
+    "sma_50": 91.6,
+    "trend_label": "bearish"
+  },
+  "volume": {
+    "avg_20d": 29000000,
+    "latest": 27000000,
+    "zscore_latest": -0.5
+  },
+  "relative": [],
+  "notes": []
+}

@@ -1,0 +1,28 @@
+{
+  "ticker": "QQQ",
+  "asof": "2026-01-31",
+  "period": "3mo",
+  "interval": "1d",
+  "prices": {
+    "start": 410.0,
+    "end": 425.0,
+    "return_pct": 3.66,
+    "max_drawdown_pct": -4.0
+  },
+  "risk": {
+    "volatility_ann_pct": 18.1,
+    "atr_14": 3.4
+  },
+  "trend": {
+    "sma_20": 423.0,
+    "sma_50": 417.5,
+    "trend_label": "bullish"
+  },
+  "volume": {
+    "avg_20d": 48000000,
+    "latest": 50000000,
+    "zscore_latest": 0.6
+  },
+  "relative": [],
+  "notes": []
+}

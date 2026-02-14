@@ -1,0 +1,17 @@
+{
+  "ticker": "AAPL",
+  "asof": "2026-01-31",
+  "fundamentals": {
+    "marketCap": 2800000000000,
+    "trailingPE": 25.1,
+    "forwardPE": 23.4,
+    "priceToBook": 30.2,
+    "dividendYield": 0.005
+  },
+  "calendar": {
+    "Earnings Date": {
+      "2026-02-01": "2026-02-01"
+    }
+  },
+  "flags": []
+}

@@ -1,0 +1,28 @@
+{
+  "ticker": "SPY",
+  "asof": "2026-01-31",
+  "period": "3mo",
+  "interval": "1d",
+  "prices": {
+    "start": 480.0,
+    "end": 492.0,
+    "return_pct": 2.5,
+    "max_drawdown_pct": -3.1
+  },
+  "risk": {
+    "volatility_ann_pct": 14.2,
+    "atr_14": 2.7
+  },
+  "trend": {
+    "sma_20": 490.4,
+    "sma_50": 488.8,
+    "trend_label": "bullish"
+  },
+  "volume": {
+    "avg_20d": 72000000,
+    "latest": 69000000,
+    "zscore_latest": -0.3
+  },
+  "relative": [],
+  "notes": []
+}

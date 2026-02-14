@@ -1,0 +1,28 @@
+{
+  "ticker": "MSFT",
+  "asof": "2026-01-31",
+  "period": "3mo",
+  "interval": "1d",
+  "prices": {
+    "start": 380.0,
+    "end": 400.0,
+    "return_pct": 5.26,
+    "max_drawdown_pct": -4.2
+  },
+  "risk": {
+    "volatility_ann_pct": 19.4,
+    "atr_14": 4.2
+  },
+  "trend": {
+    "sma_20": 398.1,
+    "sma_50": 392.0,
+    "trend_label": "bullish"
+  },
+  "volume": {
+    "avg_20d": 31000000,
+    "latest": 29500000,
+    "zscore_latest": -0.4
+  },
+  "relative": [],
+  "notes": []
+}

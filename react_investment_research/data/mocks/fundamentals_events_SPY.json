@@ -1,0 +1,13 @@
+{
+  "ticker": "SPY",
+  "asof": "2026-01-31",
+  "fundamentals": {
+    "marketCap": 0,
+    "trailingPE": 0,
+    "forwardPE": 0,
+    "priceToBook": 0,
+    "dividendYield": 0
+  },
+  "calendar": {},
+  "flags": []
+}

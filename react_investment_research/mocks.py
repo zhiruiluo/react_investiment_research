@@ -39,3 +39,45 @@ def fundamentals_events(
     if payload is None:
         return {"error": "NO_DATA", "ticker": ticker, "reason": "mock not found"}
     return payload
+
+
+def sentiment_analysis(
+    ticker: str,
+    lookback_days: int = 30,
+) -> Dict[str, Any]:
+    """Return mock sentiment data for offline testing.
+    
+    Uses the built-in MOCK_SENTIMENT_DATA from the sentiment_analysis tool.
+    """
+    from .tools.sentiment_analysis import MOCK_SENTIMENT_DATA
+    
+    ticker = ticker.upper()
+    if ticker not in MOCK_SENTIMENT_DATA:
+        # Return neutral sentiment for unknown tickers
+        return {
+            "ticker": ticker,
+            "asof": "2026-02-14",
+            "overall_sentiment": 0.0,
+            "components": {"news_sentiment": 0.0, "analyst_sentiment": 0.0},
+            "metadata": {
+                "news_articles_analyzed": 0,
+                "analyst_ratings": {
+                    "strong_buy": 0,
+                    "buy": 0,
+                    "hold": 0,
+                    "sell": 0,
+                    "strong_sell": 0,
+                },
+                "consensus": "no_data",
+            },
+            "trend": "neutral",
+            "top_headlines": [],
+            "lookback_days": lookback_days,
+        }
+    
+    # Return mock data, adding the asof field
+    mock_data = MOCK_SENTIMENT_DATA[ticker].copy()
+    mock_data["ticker"] = ticker
+    mock_data["asof"] = "2026-02-14"
+    mock_data["lookback_days"] = lookback_days
+    return mock_data

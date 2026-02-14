@@ -27,6 +27,48 @@ class TestTool:
         assert tool.handler is dummy_handler
         assert tool.budget_per_ticker == 1
 
+    def test_tool_creation_with_paid_metadata(self):
+        """Test creating a paid tool with pricing."""
+        tool = Tool(
+            name="sentiment_analysis",
+            handler=dummy_handler,
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            description="Sentiment analysis tool",
+            is_paid=True,
+            pricing_usd_per_call=0.05,
+        )
+        assert tool.is_paid is True
+        assert tool.pricing_usd_per_call == 0.05
+
+    def test_tool_creation_paid_requires_pricing(self):
+        """Test that paid tools must have pricing > 0."""
+        with pytest.raises(ValueError, match="pricing_usd_per_call"):
+            Tool(
+                name="paid_tool",
+                handler=dummy_handler,
+                input_schema={"type": "object"},
+                output_schema={"type": "object"},
+                description="Test",
+                is_paid=True,
+                pricing_usd_per_call=0.0,
+            )
+
+    def test_tool_prompt_description_shows_paid_label(self):
+        """Test that paid tools show [PAID] label in description."""
+        paid_tool = Tool(
+            name="paid_tool",
+            handler=dummy_handler,
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            description="Expensive tool",
+            is_paid=True,
+            pricing_usd_per_call=0.10,
+        )
+        description = paid_tool.to_prompt_description()
+        assert "[PAID]" in description
+        assert "paid_tool" in description
+
     def test_tool_creation_empty_name(self):
         """Test that tool name cannot be empty."""
         with pytest.raises(ValueError, match="Tool name cannot be empty"):
@@ -281,3 +323,111 @@ class TestToolRegistry:
         assert "ToolRegistry" in repr_str
         assert "tool1" in repr_str
         assert "tool2" in repr_str
+    def test_registry_get_available_tool_names(self):
+        """Test getting tool names with metadata."""
+        registry = ToolRegistry()
+        free_tool = Tool(
+            name="free",
+            handler=dummy_handler,
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            description="Free tool",
+            is_paid=False,
+        )
+        paid_tool = Tool(
+            name="premium",
+            handler=dummy_handler,
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            description="Paid tool",
+            is_paid=True,
+            pricing_usd_per_call=0.05,
+        )
+        registry.register(free_tool)
+        registry.register(paid_tool)
+        
+        tools_info = registry.get_available_tool_names()
+        assert "free" in tools_info
+        assert "premium" in tools_info
+        assert tools_info["free"]["is_paid"] is False
+        assert tools_info["premium"]["is_paid"] is True
+        assert tools_info["premium"]["pricing_usd_per_call"] == 0.05
+
+    def test_registry_validate_and_filter_tools_valid(self):
+        """Test validation with all valid tools."""
+        registry = ToolRegistry()
+        tool1 = Tool(
+            name="tool1",
+            handler=dummy_handler,
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            description="Tool 1",
+        )
+        tool2 = Tool(
+            name="tool2",
+            handler=dummy_handler,
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            description="Tool 2",
+        )
+        registry.register(tool1)
+        registry.register(tool2)
+        
+        valid, invalid = registry.validate_and_filter_tools(["tool1", "tool2"])
+        assert valid == ["tool1", "tool2"]
+        assert invalid == []
+
+    def test_registry_validate_and_filter_tools_invalid(self):
+        """Test validation with invalid tools."""
+        registry = ToolRegistry()
+        tool1 = Tool(
+            name="tool1",
+            handler=dummy_handler,
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            description="Tool 1",
+        )
+        registry.register(tool1)
+        
+        valid, invalid = registry.validate_and_filter_tools(["tool1", "nonexistent"])
+        assert "tool1" in valid
+        assert "nonexistent" in invalid
+
+    def test_registry_create_filtered_registry(self):
+        """Test creating filtered registry with subset of tools."""
+        registry = ToolRegistry()
+        tool1 = Tool(
+            name="tool1",
+            handler=dummy_handler,
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            description="Tool 1",
+        )
+        tool2 = Tool(
+            name="tool2",
+            handler=dummy_handler,
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            description="Tool 2",
+        )
+        registry.register(tool1)
+        registry.register(tool2)
+        
+        filtered = registry.create_filtered_registry(["tool1"])
+        assert filtered.list_names() == ["tool1"]
+        assert filtered.get("tool2") is None
+
+    def test_registry_create_filtered_registry_invalid_tool(self):
+        """Test filtered registry rejects invalid tools."""
+        registry = ToolRegistry()
+        tool1 = Tool(
+            name="tool1",
+            handler=dummy_handler,
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            description="Tool 1",
+        )
+        registry.register(tool1)
+        
+        with pytest.raises(ValueError, match="Invalid tool"):
+            registry.create_filtered_registry(["nonexistent"])

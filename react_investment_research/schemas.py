@@ -167,6 +167,20 @@ FINAL_OUTPUT_SCHEMA: Dict[str, Any] = {
 SCHEMAS: Dict[str, Dict[str, Any]] = {
     "market_snapshot": MARKET_SNAPSHOT_SCHEMA,
     "fundamentals_events": FUNDAMENTALS_EVENTS_SCHEMA,
+    "sentiment_analysis": {  # Sentiment analysis output schema
+        "type": "object",
+        "properties": {
+            "ticker": {"type": "string"},
+            "asof": {"type": "string"},
+            "overall_sentiment": {"type": "number", "minimum": -1.0, "maximum": 1.0},
+            "components": {"type": "object"},
+            "metadata": {"type": "object"},
+            "trend": {"type": "string"},
+            "top_headlines": {"type": "array"},
+            "lookback_days": {"type": "integer"},
+        },
+        "required": ["ticker", "overall_sentiment", "components"],
+    },
     "final_output": FINAL_OUTPUT_SCHEMA,
 }
 

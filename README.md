@@ -1,12 +1,13 @@
 # ReAct Investment Research Agent
 
-A minimal, offline-capable AI agent for structured investment research with two deterministic tools and strict guardrails. Returns JSON-only outputs suitable for downstream analysis.
+A minimal, offline-capable AI agent for structured investment research with three deterministic tools and strict guardrails. Returns JSON-only outputs suitable for downstream analysis.
 
 ## Features
 
-- **Two Core Tools**
-  - `market_snapshot`: Returns price history, returns, volatility, trend, volume metrics
-  - `fundamentals_events`: Returns allowlist-filtered fundamentals and earnings calendar
+- **Three Core Tools**
+  - `market_snapshot` [FREE]: Technical analysis (price, returns, volatility, trend, volume)
+  - `fundamentals_events` [FREE]: Company fundamentals and earnings calendar
+  - `sentiment_analysis` [PAID $0.05/call]: News and analyst sentiment analysis
 - **Strict Guardrails**
   - Max 6 tool calls per query
   - Max 5 tickers per query
@@ -22,12 +23,15 @@ A minimal, offline-capable AI agent for structured investment research with two 
   - Strict schema validation on all responses
   - Retry logic for tool failures
   - Graceful degradation with limitation notes
+- **Tool Tiers & Pricing** (opt-in via `--tools` flag)
+  - Free tier: `market_snapshot` and `fundamentals_events` (default)
+  - Premium tier: `sentiment_analysis` ($0.05/call) with real NewsAPI integration
+  - Secure by default: paid tools require explicit opt-in
 - **Cost & Token Tracking** (optional)
   - Track LLM token usage and compute costs
   - Compare pricing between OpenAI and Anthropic
-  - Batch cost analysis and monthly projections
-  - 60-85% cost reduction strategies available
-  - See [docs/COST_ANALYSIS.md](docs/COST_ANALYSIS.md) and [docs/OPTIMIZATION_STRATEGIES.md](docs/OPTIMIZATION_STRATEGIES.md)
+  - Per-tool pricing tracked for premium tools
+  - See [docs/COST_ANALYSIS.md](docs/COST_ANALYSIS.md) for details
 
 ## Quick Start
 
@@ -46,13 +50,28 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
+### Environment Configuration (Optional)
+
+For full sentiment analysis with real news data, add your API keys to `.env`:
+
+```bash
+# OpenAI or Anthropic (for LLM features)
+OPENAI_API_KEY="sk-..."
+ANTHROPIC_API_KEY="sk-ant-..."
+
+# NewsAPI (for sentiment_analysis tool)
+NEWS_API_KEY="your_newsapi_key"
+```
+
+Without `NEWS_API_KEY`, sentiment_analysis falls back to realistic mock data for testing.
+
 ### Run Tests
 
 ```bash
 python -m pytest -q
 ```
 
-Expected output: `58 passed` (includes unit and integration tests)
+Expected output: `52+ passed` (includes unit tests for tools, agent, registry, and CLI)
 
 ### Run Offline Simulation
 
@@ -83,7 +102,39 @@ OPENAI_API_KEY=sk-... python -m react_investment_research --use-llm \
 # Option 2: Anthropic Claude (fallback)
 ANTHROPIC_API_KEY=sk-ant-... python -m react_investment_research --use-llm \
   --query "compare AAPL vs MSFT performance" --tickers AAPL,MSFT --period 3mo
+
+# Tool Selection (see PREMIUM_TOOLS.md for details)
+# Default: free tools only
+python -m react_investment_research --offline \
+  --query "analyze NVDA" --tickers NVDA --period 3mo
+
+# With sentiment analysis (requires --tools flag)
+python -m react_investment_research --offline \
+  --query "What's the sentiment for NVDA?" --tickers NVDA --period 3mo \
+  --tools "sentiment_analysis"
+
+# Combined analysis: tech + fundamentals + sentiment
+python -m react_investment_research --offline \
+  --query "Analyze Tech Trends" --tickers NVDA,AAPL --period 3mo \
+  --tools "market_snapshot,fundamentals_events,sentiment_analysis"
+
+# View available tools
+python -m react_investment_research --help | grep -A 5 "tools"
 ```
+
+### Tool Tiers
+
+The agent supports tiered tool access (see [PREMIUM_TOOLS.md](PREMIUM_TOOLS.md)):
+
+- **Free Tools** (default, no flag needed):
+  - `market_snapshot`: Technical analysis metrics
+  - `fundamentals_events`: Company fundamentals and earnings calendar
+  
+- **Premium Tools** (opt-in via `--tools` flag):
+  - `sentiment_analysis` ($0.05/call): Analyzes news headlines and analyst ratings for sentiment trends
+    - Requires `NEWS_API_KEY` in `.env` for live data (falls back to mock data)
+    - Returns sentiment score (-1.0 to +1.0), components, and trending
+  - Additional premium tools can be added using the same extensible pattern
 
 ## Output Schema
 

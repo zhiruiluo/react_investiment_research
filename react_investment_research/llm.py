@@ -101,15 +101,20 @@ class LLMClient:
         Returns:
             JSON string with tool decision example
         """
-        # Extract tool names from description (format: "- tool_name: description")
+        # Extract tool names from description (format: "- tool_name [PAID/FREE]: description")
         tool_names = []
         for line in tools_description.split('\n'):
             if line.strip().startswith('-'):
-                # Extract tool name between '-' and ':'
+                # Extract tool name between '-' and ':' or '[PAID]'/'[FREE]'
                 parts = line.split(':')
                 if len(parts) >= 2:
                     tool_name = parts[0].strip().lstrip('-').strip()
-                    tool_names.append(tool_name)
+                    # Remove [PAID] or [FREE] tags
+                    tool_name = tool_name.replace('[PAID]', '').replace('[FREE]', '').strip()
+                    # Remove price info like "$0.05/call"
+                    tool_name = tool_name.replace('$0.05/call', '').strip()
+                    if tool_name:
+                        tool_names.append(tool_name)
         
         # Build example with actual tools and tickers
         if tool_names:
@@ -348,6 +353,16 @@ Rules:
             tools = result.get("tools", [])
             if not isinstance(tools, list):
                 tools = []
+            
+            # Clean tool names by removing [PAID]/[FREE] tags and price labels
+            for tool in tools:
+                if isinstance(tool, dict) and "tool" in tool:
+                    tool_name = tool["tool"]
+                    # Remove [PAID] or [FREE] tags
+                    tool_name = tool_name.replace('[PAID]', '').replace('[FREE]', '').strip()
+                    # Remove price info like "$0.05/call"
+                    tool_name = tool_name.rsplit('$', 1)[0].strip() if '$' in tool_name else tool_name
+                    tool["tool"] = tool_name
 
             return {
                 "tools": tools,
@@ -404,6 +419,16 @@ Rules:
             tools = result.get("tools", [])
             if not isinstance(tools, list):
                 tools = []
+            
+            # Clean tool names by removing [PAID]/[FREE] tags and price labels
+            for tool in tools:
+                if isinstance(tool, dict) and "tool" in tool:
+                    tool_name = tool["tool"]
+                    # Remove [PAID] or [FREE] tags
+                    tool_name = tool_name.replace('[PAID]', '').replace('[FREE]', '').strip()
+                    # Remove price info like "$0.05/call"
+                    tool_name = tool_name.rsplit('$', 1)[0].strip() if '$' in tool_name else tool_name
+                    tool["tool"] = tool_name
 
             return {
                 "tools": tools,

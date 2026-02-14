@@ -8,6 +8,7 @@ from .cost_analyzer import CostAnalyzer, get_global_analyzer
 from .llm import LLMClient
 from .schemas import validate_schema
 from .tools import market_snapshot, fundamentals_events
+from .tools.sentiment_analysis import sentiment_analysis
 from .tools.providers import YFinanceProvider
 from .tools.registry import Tool, ToolRegistry
 
@@ -40,7 +41,7 @@ def _json_safe(value: Any) -> Any:
 
 
 class ResearchAgent:
-    def __init__(self, offline: bool = False, use_llm: bool = True, track_costs: bool = True) -> None:
+    def __init__(self, offline: bool = False, use_llm: bool = True, track_costs: bool = True, available_tools: Optional[List[str]] = None) -> None:
         self.offline = offline
         self.use_llm = use_llm and not offline
         self.llm = LLMClient() if self.use_llm else None
@@ -50,7 +51,12 @@ class ResearchAgent:
         self.allowed_periods = {"1mo", "3mo", "6mo", "1y"}
         self.proxy_tickers = ["SPY", "QQQ", "TLT", "GLD"]
         self.provider = YFinanceProvider()
-        self.registry = self._initialize_tool_registry()
+        
+        # Initialize full registry first
+        self._full_registry = self._initialize_tool_registry()
+        
+        # Filter to available tools (default to free-tier tools only)
+        self.registry = self._get_available_tools_registry(available_tools)
 
     def _initialize_tool_registry(self) -> ToolRegistry:
         """Initialize and return the tool registry with market_snapshot and fundamentals_events."""
@@ -123,7 +129,56 @@ class ResearchAgent:
         )
         registry.register(fundamentals_tool)
         
+        # Define sentiment_analysis tool (paid)
+        from .tools.sentiment_analysis import SENTIMENT_ANALYSIS_SCHEMA, SENTIMENT_ANALYSIS_OUTPUT_SCHEMA
+        sentiment_tool = Tool(
+            name="sentiment_analysis",
+            handler=sentiment_analysis,
+            input_schema=SENTIMENT_ANALYSIS_SCHEMA,
+            output_schema=SENTIMENT_ANALYSIS_OUTPUT_SCHEMA,
+            description="Analyze news and analyst sentiment for a stock. Provides sentiment score, components (news vs analyst), and trend analysis.",
+            usage_examples=[
+                "What's the sentiment for NVDA?",
+                "Is there positive news about AAPL?",
+                "Compare sentiment between tech stocks",
+            ],
+            budget_per_ticker=1,
+            is_paid=True,
+            pricing_usd_per_call=0.05,
+        )
+        registry.register(sentiment_tool)
+        
         return registry
+
+    def _get_available_tools_registry(self, requested_tools: Optional[List[str]]) -> ToolRegistry:
+        """Get the tools registry filtered to available tools.
+        
+        Args:
+            requested_tools: List of specific tools to use, or None to use default
+            
+        Returns:
+            Filtered ToolRegistry
+            
+        Raises:
+            ValueError: If invalid tools are requested
+        """
+        if requested_tools:
+            # User explicitly requested specific tools
+            valid, invalid = self._full_registry.validate_and_filter_tools(requested_tools)
+            if invalid:
+                available = self._full_registry.list_names()
+                raise ValueError(
+                    f"Invalid tool(s): {invalid}. Available tools: {available}"
+                )
+            # Create filtered registry with requested tools
+            return self._full_registry.create_filtered_registry(valid)
+        else:
+            # Default: use only FREE tools for non-paying users
+            free_tools = [
+                name for name, tool in self._full_registry.get_all().items()
+                if not tool.is_paid
+            ]
+            return self._full_registry.create_filtered_registry(free_tools)
 
     def _validate_tickers(self, tickers: List[str]) -> Tuple[List[str], List[str]]:
         valid: List[str] = []
@@ -205,6 +260,17 @@ class ResearchAgent:
                     if ticker not in tool_returns:
                         tool_returns[ticker] = {}
                     tool_returns[ticker]["fundamentals_events"] = fundamentals
+                
+                elif tool_name == "sentiment_analysis":
+                    sentiment = self._call_tool(
+                        "sentiment_analysis",
+                        {"ticker": ticker, "lookback_days": 30},
+                        tool_calls,
+                        limitations,
+                    )
+                    if ticker not in tool_returns:
+                        tool_returns[ticker] = {}
+                    tool_returns[ticker]["sentiment_analysis"] = sentiment
         
         return snapshots, fundamentals_by_ticker, tool_returns
 
@@ -221,8 +287,12 @@ class ResearchAgent:
         else:
             if name == "market_snapshot":
                 tool_func = market_snapshot
-            else:
+            elif name == "fundamentals_events":
                 tool_func = fundamentals_events
+            elif name == "sentiment_analysis":
+                tool_func = sentiment_analysis
+            else:
+                raise ValueError(f"Unknown tool: {name}")
 
         payload = tool_func(**args)
         ok, error = validate_schema(name, payload)
@@ -358,36 +428,52 @@ class ResearchAgent:
                     if "error" in fundamentals:
                         output["limitations"].append(f"{ticker}: fundamentals unavailable")
         else:
-            # Fallback pipeline: call all tools for all tickers
+            # Fallback pipeline: call all available tools for all tickers
             for ticker in tickers_for_calls:
-                snapshot = self._call_tool(
-                    "market_snapshot",
-                    {"ticker": ticker, "period": period, "interval": "1d", "benchmarks": []},
-                    tool_calls,
-                    output["limitations"],
-                )
-                fundamentals = self._call_tool(
-                    "fundamentals_events",
-                    {"ticker": ticker, "fields": [], "include_calendar": True, "lookback_days": 90},
-                    tool_calls,
-                    output["limitations"],
-                )
-
-                data_used.append(f"market_snapshot:{ticker}")
-                data_used.append(f"fundamentals_events:{ticker}")
-                snapshots[ticker] = snapshot
-                fundamentals_by_ticker[ticker] = fundamentals.get("fundamentals", {})
-                tool_returns[ticker] = {
-                    "market_snapshot": snapshot,
-                    "fundamentals_events": fundamentals,
-                }
-
-                thesis, risk = self._summarize_snapshot(ticker, snapshot)
-                thesis_bullets.append(thesis)
-                if risk:
-                    risks.append(risk)
-                if "error" in fundamentals:
-                    output["limitations"].append(f"{ticker}: fundamentals unavailable")
+                tool_names = self.registry.list_names()
+                
+                for tool_name in tool_names:
+                    tool_obj = self.registry.get(tool_name)
+                    if not tool_obj:
+                        continue
+                    
+                    # Build args based on tool name
+                    if tool_name == "market_snapshot":
+                        args = {"ticker": ticker, "period": period, "interval": "1d", "benchmarks": []}
+                    elif tool_name == "fundamentals_events":
+                        args = {"ticker": ticker, "fields": [], "include_calendar": True, "lookback_days": 90}
+                    elif tool_name == "sentiment_analysis":
+                        args = {"ticker": ticker, "lookback_days": 30}
+                    else:
+                        # Skip unknown tools
+                        continue
+                    
+                    result = self._call_tool(tool_name, args, tool_calls, output["limitations"])
+                    
+                    data_used.append(f"{tool_name}:{ticker}")
+                    
+                    # Store results by tool type
+                    if tool_name == "market_snapshot":
+                        snapshots[ticker] = result
+                    elif tool_name == "fundamentals_events":
+                        fundamentals_by_ticker[ticker] = result.get("fundamentals", {})
+                    
+                    if ticker not in tool_returns:
+                        tool_returns[ticker] = {}
+                    tool_returns[ticker][tool_name] = result
+                
+                # Generate thesis/risks from snapshots if available
+                if ticker in snapshots:
+                    thesis, risk = self._summarize_snapshot(ticker, snapshots[ticker])
+                    thesis_bullets.append(thesis)
+                    if risk:
+                        risks.append(risk)
+                
+                # Check for fundamentals errors
+                if ticker in tool_returns and "fundamentals_events" in tool_returns[ticker]:
+                    fundamentals = tool_returns[ticker]["fundamentals_events"]
+                    if "error" in fundamentals:
+                        output["limitations"].append(f"{ticker}: fundamentals unavailable")
 
         if self.llm and self.llm.enabled:
             llm_summary = self._llm_summarize(query, tickers_for_calls, snapshots, fundamentals_by_ticker)
